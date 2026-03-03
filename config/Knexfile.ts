@@ -1,7 +1,9 @@
 import type { Knex } from "knex";
 import dotenv from "dotenv";
 
-dotenv.config();
+import path from "path";
+
+dotenv.config({ path: path.join(__dirname, "../.env") });
 
 const config: { [key: string]: Knex.Config } = {
   development: {
@@ -14,11 +16,11 @@ const config: { [key: string]: Knex.Config } = {
       database: process.env.DB_NAME || "demo_credit_dev",
     },
     migrations: {
-      directory: "./src/migrations",
+      directory: path.join(__dirname, "../src/migrations"),
       extension: "ts",
     },
     seeds: {
-      directory: "./src/seeds",
+      directory: path.join(__dirname, "../src/seeds"),
       extension: "ts",
     },
   },
@@ -33,7 +35,7 @@ const config: { [key: string]: Knex.Config } = {
       database: process.env.DB_NAME || "demo_credit_test",
     },
     migrations: {
-      directory: "./src/migrations",
+      directory: path.join(__dirname, "../src/migrations"),
       extension: "ts",
     },
   },
