@@ -5,6 +5,8 @@ import path from "path";
 
 dotenv.config({ path: path.join(__dirname, "../.env") });
 
+const isProduction = process.env.NODE_ENV === "production";
+
 const config: { [key: string]: Knex.Config } = {
   development: {
     client: "mysql2",
@@ -16,11 +18,15 @@ const config: { [key: string]: Knex.Config } = {
       database: process.env.DB_NAME || "demo_credit_dev",
     },
     migrations: {
-      directory: path.join(__dirname, "../src/migrations"),
+      directory: isProduction
+        ? path.join(__dirname, "../dist/migrations")
+        : path.join(__dirname, "../src/migrations"),
       extension: "ts",
     },
     seeds: {
-      directory: path.join(__dirname, "../src/seeds"),
+      directory: isProduction
+        ? path.join(__dirname, "../dist/seeds")
+        : path.join(__dirname, "../src/seeds"),
       extension: "ts",
     },
   },
@@ -49,7 +55,9 @@ const config: { [key: string]: Knex.Config } = {
       database: process.env.DB_NAME,
     },
     migrations: {
-      directory: "../src/migrations",
+      directory: isProduction
+        ? path.join(__dirname, "../dist/migrations")
+        : path.join(__dirname, "../src/migrations"),
       extension: "ts",
     },
     pool: {
