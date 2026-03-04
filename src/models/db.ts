@@ -1,4 +1,5 @@
-import knex, { Knex } from "knex";
+import knex from "knex";
+import type { Knex } from "knex";
 import path from "path";
 
 const isProduction = process.env.NODE_ENV === "production";
