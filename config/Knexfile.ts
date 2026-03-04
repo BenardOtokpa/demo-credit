@@ -49,10 +49,8 @@ const config: { [key: string]: Knex.Config } = {
     client: "mysql2",
     connection: process.env.DATABASE_URL,
     migrations: {
-      directory: isProduction
-        ? path.join(__dirname, "migrations")
-        : path.join(__dirname, "../migrations"),
-      extension: "ts",
+      directory: path.join(__dirname, "../src/migrations"),
+      extension: "js",
     },
     pool: {
       min: 2,
