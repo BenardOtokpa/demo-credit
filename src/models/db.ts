@@ -1,5 +1,6 @@
 import knex, { Knex } from "knex";
 import dotenv from "dotenv";
+import path from "path";
 
 dotenv.config();
 
@@ -23,7 +24,7 @@ const dbConfig: Knex.Config = {
   },
   migrations: {
     tableName: "knex_migrations",
-    directory: "./migrations",
+    directory: path.join(__dirname, "../migrations"),
   },
 };
 
