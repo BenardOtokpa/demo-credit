@@ -1,50 +1,58 @@
-import { v4 as uuidv4 } from 'uuid';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import db from '../models/db';
-import { CreateUserDTO, User, Wallet, AuthPayload } from '../types';
-import { adjutorService } from './adjutor.service';
-import logger from '../utils/logger';
+import { v4 as uuidv4 } from "uuid";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import db from "../models/db";
+import { CreateUserDTO, User, Wallet, AuthPayload } from "../types";
+import { adjutorService } from "../services/adjutor.service";
+import logger from "../utils/logger";
 
-const JWT_SECRET = process.env.JWT_SECRET || 'demo-credit-secret-key';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
+const JWT_SECRET = process.env.JWT_SECRET || "demo-credit-secret-key";
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "24h";
 const SALT_ROUNDS = 10;
 
 export class UserService {
-
   async createUser(dto: CreateUserDTO): Promise<{
-    user: Omit<User, 'password_hash'>;
+    user: Omit<User, "password_hash">;
     wallet: Wallet;
     token: string;
   }> {
     // STEP 1 — Check Karma blacklist for email
     const emailKarma = await adjutorService.checkKarmaBlacklist(dto.email);
-    if (emailKarma.is_blacklisted) {
-      throw new Error('BLACKLISTED: User is on the Karma blacklist and cannot be onboarded');
+console.log("KARMA EMAIL:", emailKarma.is_blacklisted, emailKarma.karma_identity, dto.email);
+    // Only block if the returned identity matches what we sent
+    if (emailKarma.is_blacklisted && emailKarma.karma_identity === dto.email) {
+      throw new Error(
+        "BLACKLISTED: User is on the Karma blacklist and cannot be onboarded",
+      );
     }
 
     // STEP 2 — Check Karma blacklist for BVN
     const bvnKarma = await adjutorService.checkKarmaBlacklist(dto.bvn);
-    if (bvnKarma.is_blacklisted) {
-      throw new Error('BLACKLISTED: User BVN is on the Karma blacklist and cannot be onboarded');
+console.log('KARMA BVN :', bvnKarma.is_blacklisted, bvnKarma.karma_identity, dto.bvn);
+    if (bvnKarma.is_blacklisted && bvnKarma.karma_identity === dto.bvn) {
+      throw new Error(
+        "BLACKLISTED: User BVN is on the Karma blacklist and cannot be onboarded",
+      );
     }
 
     // STEP 3 — Check for duplicate email, phone or BVN
-    const existingUser = await db('users')
-      .where('email', dto.email)
-      .orWhere('phone_number', dto.phone_number)
-      .orWhere('bvn', dto.bvn)
+    const existingUser = await db("users")
+      .where("email", dto.email)
+      .orWhere("phone_number", dto.phone_number)
+      .orWhere("bvn", dto.bvn)
       .first();
 
     if (existingUser) {
       if (existingUser.email === dto.email) {
-        throw new Error('DUPLICATE: A user with this email already exists');
+        throw new Error("DUPLICATE: A user with this email already exists");
       }
       if (existingUser.phone_number === dto.phone_number) {
-        throw new Error('DUPLICATE: A user with this phone number already exists');
+        throw new Error(
+          "DUPLICATE: A user with this phone number already exists",
+        );
       }
       if (existingUser.bvn === dto.bvn) {
-        throw new Error('DUPLICATE: A user with this BVN already exists');
+        throw new Error("DUPLICATE: A user with this BVN already exists");
       }
     }
 
@@ -56,7 +64,7 @@ export class UserService {
     const walletId = uuidv4();
 
     await db.transaction(async (trx) => {
-      await trx('users').insert({
+      await trx("users").insert({
         id: userId,
         full_name: dto.full_name,
         email: dto.email,
@@ -68,11 +76,11 @@ export class UserService {
         updated_at: new Date(),
       });
 
-      await trx('wallets').insert({
+      await trx("wallets").insert({
         id: walletId,
         user_id: userId,
         balance: 0.0,
-        currency: 'NGN',
+        currency: "NGN",
         is_active: true,
         created_at: new Date(),
         updated_at: new Date(),
@@ -93,27 +101,32 @@ export class UserService {
     };
   }
 
-  async loginUser(email: string, password: string): Promise<{
-    user: Omit<User, 'password_hash'>;
+  async loginUser(
+    email: string,
+    password: string,
+  ): Promise<{
+    user: Omit<User, "password_hash">;
     wallet: Wallet;
     token: string;
   }> {
     // STEP 1 — Find user by email
-    const user = await db('users').where('email', email).first() as User | undefined;
+    const user = (await db("users").where("email", email).first()) as
+      | User
+      | undefined;
 
     if (!user) {
-      throw new Error('AUTH: Invalid email or password');
+      throw new Error("AUTH: Invalid email or password");
     }
 
     // STEP 2 — Check if blacklisted
     if (user.is_blacklisted) {
-      throw new Error('BLACKLISTED: This account has been blacklisted');
+      throw new Error("BLACKLISTED: This account has been blacklisted");
     }
 
     // STEP 3 — Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
-      throw new Error('AUTH: Invalid email or password');
+      throw new Error("AUTH: Invalid email or password");
     }
 
     // STEP 4 — Get wallet and generate token
@@ -130,15 +143,15 @@ export class UserService {
   }
 
   async findUserById(id: string): Promise<User | undefined> {
-    return db('users').where('id', id).first();
+    return db("users").where("id", id).first();
   }
 
   async findUserByEmail(email: string): Promise<User | undefined> {
-    return db('users').where('email', email).first();
+    return db("users").where("email", email).first();
   }
 
   async findWalletByUserId(userId: string): Promise<Wallet | undefined> {
-    return db('wallets').where('user_id', userId).first();
+    return db("wallets").where("user_id", userId).first();
   }
 
   generateToken(payload: AuthPayload): string {
@@ -151,7 +164,7 @@ export class UserService {
     return jwt.verify(token, JWT_SECRET) as AuthPayload;
   }
 
-  sanitizeUser(user: User): Omit<User, 'password_hash'> {
+  sanitizeUser(user: User): Omit<User, "password_hash"> {
     const { password_hash, ...sanitized } = user;
     return sanitized;
   }
