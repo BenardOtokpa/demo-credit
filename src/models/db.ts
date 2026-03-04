@@ -23,9 +23,7 @@ const dbConfig: Knex.Config = {
 
   migrations: {
     tableName: "knex_migrations",
-    directory: isProduction
-      ? path.join(__dirname, "migrations") // dist/migrations
-      : path.join(__dirname, "../migrations"), // src/migrations
+    directory: path.join(__dirname, "../migrations"),
   },
 };
 
