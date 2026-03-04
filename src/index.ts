@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config();
-console.log("API KEY LOADED:", process.env.ADJUTOR_API_KEY);
+
 import createApp from "./app";
 import db from "./models/db";
 import logger from "./utils/logger";
