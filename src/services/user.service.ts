@@ -18,9 +18,7 @@ export class UserService {
   }> {
     // STEP 1 — Check Karma blacklist for email
     const emailKarma = await adjutorService.checkKarmaBlacklist(dto.email);
-console.log("KARMA EMAIL:", emailKarma.is_blacklisted, emailKarma.karma_identity, dto.email);
-    // Only block if the returned identity matches what we sent
-    if (emailKarma.is_blacklisted && emailKarma.karma_identity === dto.email) {
+    if (emailKarma.is_blacklisted) {
       throw new Error(
         "BLACKLISTED: User is on the Karma blacklist and cannot be onboarded",
       );
@@ -28,8 +26,7 @@ console.log("KARMA EMAIL:", emailKarma.is_blacklisted, emailKarma.karma_identity
 
     // STEP 2 — Check Karma blacklist for BVN
     const bvnKarma = await adjutorService.checkKarmaBlacklist(dto.bvn);
-console.log('KARMA BVN :', bvnKarma.is_blacklisted, bvnKarma.karma_identity, dto.bvn);
-    if (bvnKarma.is_blacklisted && bvnKarma.karma_identity === dto.bvn) {
+    if (bvnKarma.is_blacklisted) {
       throw new Error(
         "BLACKLISTED: User BVN is on the Karma blacklist and cannot be onboarded",
       );

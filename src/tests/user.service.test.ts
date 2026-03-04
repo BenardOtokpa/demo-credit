@@ -3,9 +3,7 @@ import { UserService } from "../services/user.service";
 // ─── MOCK DATABASE ────────────────────────────────────────────
 jest.mock("../models/db", () => {
   const mockDb: any = jest.fn();
-
   mockDb.transaction = jest.fn().mockImplementation(async (callback: any) => {
-    // trx must be a FUNCTION that returns chainable object
     const mockTrx: any = jest.fn().mockReturnValue({
       insert: jest.fn().mockResolvedValue([1]),
       update: jest.fn().mockResolvedValue(1),
@@ -15,13 +13,8 @@ jest.mock("../models/db", () => {
     });
     await callback(mockTrx);
   });
-
   mockDb.raw = jest.fn().mockResolvedValue([]);
-
-  return {
-    __esModule: true,
-    default: mockDb,
-  };
+  return { __esModule: true, default: mockDb };
 });
 
 // ─── MOCK BCRYPT ──────────────────────────────────────────────
@@ -85,7 +78,6 @@ const validDto = {
 const setupDbChain = (returnValues: any[]) => {
   const mockDb = require("../models/db").default;
   let callCount = 0;
-
   mockDb.mockImplementation(() => ({
     where: jest.fn().mockReturnThis(),
     orWhere: jest.fn().mockReturnThis(),
@@ -100,28 +92,22 @@ const setupDbChain = (returnValues: any[]) => {
   }));
 };
 
-// reset adjutor to clean state
-const resetAdjutor = () => {
-  mockCheckKarmaBlacklist.mockResolvedValue({ is_blacklisted: false });
-};
 // ─── TESTS ────────────────────────────────────────────────────
 describe("UserService", () => {
   let userService: UserService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    resetAdjutor(); // ← reset adjutor to "clean" before every test
+    // Reset karma to clean after every test
+    mockCheckKarmaBlacklist.mockResolvedValue({ is_blacklisted: false });
     userService = new UserService();
   });
 
   // ─── createUser ─────────────────────────────────────────────
   describe("createUser", () => {
     it("should create user and wallet successfully", async () => {
-      // null = no duplicate, mockUser = findUserById, mockWallet = findWalletByUserId
       setupDbChain([null, mockUser, mockWallet]);
-
       const result = await userService.createUser(validDto);
-
       expect(result).toHaveProperty("user");
       expect(result).toHaveProperty("wallet");
       expect(result).toHaveProperty("token");
@@ -130,9 +116,7 @@ describe("UserService", () => {
 
     it("should not return password_hash in response", async () => {
       setupDbChain([null, mockUser, mockWallet]);
-
       const result = await userService.createUser(validDto);
-
       expect(result.user).not.toHaveProperty("password_hash");
     });
 
@@ -149,8 +133,8 @@ describe("UserService", () => {
 
     it("should throw BLACKLISTED when BVN is on karma list", async () => {
       mockCheckKarmaBlacklist
-        .mockResolvedValueOnce({ is_blacklisted: false }) // email passes
-        .mockResolvedValueOnce({ is_blacklisted: true, reason: "Fraud" }); // BVN fails
+        .mockResolvedValueOnce({ is_blacklisted: false })
+        .mockResolvedValueOnce({ is_blacklisted: true, reason: "Fraud" });
 
       await expect(userService.createUser(validDto)).rejects.toThrow(
         "BLACKLISTED",
@@ -158,8 +142,7 @@ describe("UserService", () => {
     });
 
     it("should throw DUPLICATE when email already exists", async () => {
-      setupDbChain([mockUser]); // existing user found
-
+      setupDbChain([mockUser]);
       await expect(userService.createUser(validDto)).rejects.toThrow(
         "DUPLICATE",
       );
@@ -172,7 +155,6 @@ describe("UserService", () => {
         phone_number: validDto.phone_number,
       };
       setupDbChain([existingUser]);
-
       await expect(userService.createUser(validDto)).rejects.toThrow(
         "DUPLICATE",
       );
@@ -186,7 +168,6 @@ describe("UserService", () => {
         bvn: validDto.bvn,
       };
       setupDbChain([existingUser]);
-
       await expect(userService.createUser(validDto)).rejects.toThrow(
         "DUPLICATE",
       );
@@ -197,12 +178,10 @@ describe("UserService", () => {
   describe("loginUser", () => {
     it("should login successfully with valid credentials", async () => {
       setupDbChain([mockUser, mockWallet]);
-
       const result = await userService.loginUser(
         "john@example.com",
         "password123",
       );
-
       expect(result).toHaveProperty("token");
       expect(result.user.email).toBe(mockUser.email);
       expect(result.user).not.toHaveProperty("password_hash");
@@ -210,7 +189,6 @@ describe("UserService", () => {
 
     it("should throw AUTH when user is not found", async () => {
       setupDbChain([null]);
-
       await expect(
         userService.loginUser("notfound@example.com", "password123"),
       ).rejects.toThrow("AUTH:");
@@ -220,7 +198,6 @@ describe("UserService", () => {
       const bcrypt = require("bcryptjs");
       bcrypt.compare.mockResolvedValueOnce(false);
       setupDbChain([mockUser]);
-
       await expect(
         userService.loginUser("john@example.com", "wrongpassword"),
       ).rejects.toThrow("AUTH:");
@@ -229,7 +206,6 @@ describe("UserService", () => {
     it("should throw BLACKLISTED when account is blacklisted", async () => {
       const blacklistedUser = { ...mockUser, is_blacklisted: true };
       setupDbChain([blacklistedUser]);
-
       await expect(
         userService.loginUser("john@example.com", "password123"),
       ).rejects.toThrow("BLACKLISTED:");
@@ -237,12 +213,10 @@ describe("UserService", () => {
 
     it("should not expose password_hash in login response", async () => {
       setupDbChain([mockUser, mockWallet]);
-
       const result = await userService.loginUser(
         "john@example.com",
         "password123",
       );
-
       expect(result.user).not.toHaveProperty("password_hash");
     });
   });
@@ -252,7 +226,6 @@ describe("UserService", () => {
     it("should generate a valid JWT token", () => {
       const payload = { userId: "user-123", email: "test@example.com" };
       const token = userService.generateToken(payload);
-
       expect(typeof token).toBe("string");
       expect(token.split(".").length).toBe(3);
     });
@@ -261,7 +234,6 @@ describe("UserService", () => {
       const payload = { userId: "user-123", email: "test@example.com" };
       const token = userService.generateToken(payload);
       const decoded = userService.verifyToken(token);
-
       expect(decoded.userId).toBe(payload.userId);
       expect(decoded.email).toBe(payload.email);
     });
@@ -274,7 +246,6 @@ describe("UserService", () => {
       const payload = { userId: "user-123", email: "test@example.com" };
       const token = userService.generateToken(payload);
       const tampered = token.slice(0, -5) + "XXXXX";
-
       expect(() => userService.verifyToken(tampered)).toThrow();
     });
   });
