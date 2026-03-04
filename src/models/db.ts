@@ -1,9 +1,11 @@
 import knex, { Knex } from "knex";
+import path from "path";
 
 const isProduction = process.env.NODE_ENV === "production";
 
 const dbConfig: Knex.Config = {
   client: "mysql2",
+
   connection: isProduction
     ? process.env.DATABASE_URL
     : {
@@ -13,12 +15,20 @@ const dbConfig: Knex.Config = {
         password: process.env.DB_PASSWORD || "",
         database: process.env.DB_NAME || "demo_credit_dev",
       },
+
   pool: {
     min: 2,
     max: 10,
   },
+
+  migrations: {
+    tableName: "knex_migrations",
+    directory: isProduction
+      ? path.join(__dirname, "migrations") // dist/migrations
+      : path.join(__dirname, "../migrations"), // src/migrations
+  },
 };
 
-const db = knex(dbConfig);
+const db: Knex = knex(dbConfig);
 
 export default db;
