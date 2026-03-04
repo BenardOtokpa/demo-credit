@@ -50,8 +50,8 @@ const config: { [key: string]: Knex.Config } = {
     connection: process.env.DATABASE_URL,
     migrations: {
       directory: isProduction
-        ? path.join(__dirname, "../dist/migrations")
-        : path.join(__dirname, "../src/migrations"),
+        ? path.join(__dirname, "migrations")
+        : path.join(__dirname, "../migrations"),
       extension: "ts",
     },
     pool: {
